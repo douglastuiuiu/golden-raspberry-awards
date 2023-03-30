@@ -1,6 +1,7 @@
 package br.com.douglasog87.texoit.goldenraspberryawards.model;
 
 import lombok.*;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
