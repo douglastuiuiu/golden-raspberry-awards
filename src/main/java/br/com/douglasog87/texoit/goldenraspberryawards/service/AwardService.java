@@ -2,7 +2,7 @@ package br.com.douglasog87.texoit.goldenraspberryawards.service;
 
 import br.com.douglasog87.texoit.goldenraspberryawards.model.Award;
 import br.com.douglasog87.texoit.goldenraspberryawards.repository.AwardRepository;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,14 +12,16 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
 @Slf4j
-@RequiredArgsConstructor
+@Service
+@AllArgsConstructor
 public class AwardService {
 
     private final AwardRepository awardRepository;
 
     public void loadDataFromCSV() {
+        log.info("Iniciando carregamento de dados a partir do arquivo CSV");
+
         List<Award> awards = new ArrayList<>();
 
         try {
@@ -31,13 +33,18 @@ public class AwardService {
 
             String line;
             while ((line = bufferedReader.readLine()) != null) {
-                String[] data = line.split(";");
+
+                final String[] data = line.split(";");
+
+                final String data4 = (data.length < 5) ? "no" : data[4];
+                final Boolean winner = (data4 == "no") ? Boolean.FALSE : Boolean.TRUE;
+
                 Award award = Award.builder()
                         .year(Long.parseLong(data[0]))
                         .title(data[1])
                         .studios(data[2])
                         .producers(data[3])
-                        .winner(Boolean.parseBoolean(data[4]))
+                        .winner(winner)
                         .build();
                 awards.add(award);
             }

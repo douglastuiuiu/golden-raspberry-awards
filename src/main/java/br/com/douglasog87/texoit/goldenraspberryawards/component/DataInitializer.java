@@ -1,21 +1,20 @@
 package br.com.douglasog87.texoit.goldenraspberryawards.component;
 
 import br.com.douglasog87.texoit.goldenraspberryawards.service.AwardService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
-@Component
+@Configuration
+@RequiredArgsConstructor
 public class DataInitializer implements ApplicationRunner {
 
     private final AwardService awardService;
-
-    public DataInitializer(AwardService awardService) {
-        this.awardService = awardService;
-    }
 
     @Override
     public void run(ApplicationArguments args) {
         awardService.loadDataFromCSV();
     }
+
 }

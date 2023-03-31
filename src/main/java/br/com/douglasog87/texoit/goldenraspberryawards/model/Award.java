@@ -1,22 +1,22 @@
 package br.com.douglasog87.texoit.goldenraspberryawards.model;
 
-import lombok.*;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.io.Serializable;
 
-@Entity
-@Getter
-@Setter
+
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@Entity
+@Table(name = "award")
 public class Award implements Serializable {
+
     private static final long serialVersionUID = -404707488723672609L;
 
     @Id
