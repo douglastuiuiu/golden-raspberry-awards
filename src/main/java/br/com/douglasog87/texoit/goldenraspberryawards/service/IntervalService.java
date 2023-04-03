@@ -19,103 +19,82 @@ public class IntervalService {
 
     public Interval getBetterAndWorseProducer() {
 
-        List<Award> awards = awardRepository.findAllByWinnerIsTrueOrderByYearAsc();
+        final List<Award> awards = awardRepository.findAllByWinnerIsTrueOrderByYearAsc();
 
-        // Calcula os intervalos MIN e MAX para cada produtor
-        Map<String, AwardInterval> awardIntervalsMin = new HashMap<>();
-        buildAwardIntervalMin(awards, awardIntervalsMin);
+        // Calcula os intervalos mínimo para cada produtor
+        final Map<String, AwardInterval> awardIntervalMinMap = new HashMap<>();
+        buildAwardIntervalMap(awards, awardIntervalMinMap, true);
 
-        Map<String, AwardInterval> awardIntervalsMax = new HashMap<>();
-        buildAwardIntervalMax(awards, awardIntervalsMax);
+        // Calcula os intervalos máximo para cada produtor
+        final Map<String, AwardInterval> awardIntervalMaxMap = new HashMap<>();
+        buildAwardIntervalMap(awards, awardIntervalMaxMap, false);
 
-        // Cria o objeto Interval populado com as listas de menor e maior intervalo
-        return Interval.builder()
-                .min(cleanMinList(new ArrayList<>(awardIntervalsMin.values())))
-                .max(cleanMaxList(new ArrayList<>(awardIntervalsMax.values())))
-                .build();
+        // ordena de forma crescente pelo `interval` e chama o método que limpa a lista mantendo apenas itens com o mesmo `interval`
+        final ArrayList<AwardInterval> awardIntervalMinList = new ArrayList<>(awardIntervalMinMap.values());
+        Collections.sort(awardIntervalMinList, Comparator.comparingLong(AwardInterval::getInterval));
+        List<AwardInterval> awardIntervalMin = cleanList(awardIntervalMinList);
+
+        // ordena de forma decrescente pelo `interval` e chama o método que limpa a lista mantendo apenas itens com o mesmo `interval`
+        final ArrayList<AwardInterval> awardIntervalMaxList = new ArrayList<>(awardIntervalMaxMap.values());
+        Collections.sort(awardIntervalMaxList, Comparator.comparingLong(AwardInterval::getInterval));
+        Collections.reverse(awardIntervalMaxList);
+        List<AwardInterval> awardIntervalMax = cleanList(awardIntervalMaxList);
+
+        return Interval.builder().min(awardIntervalMin).max(awardIntervalMax).build();
     }
 
-    private void buildAwardIntervalMin(List<Award> awards, Map<String, AwardInterval> awardIntervalsMin) {
+    private void buildAwardIntervalMap(List<Award> awards, Map<String, AwardInterval> awardIntervals, Boolean isMin) {
         for (Award award : awards) {
-            String producer = award.getProducers();
-            Long year = award.getYear();
+            final String producer = award.getProducers();
+            final Long year = award.getYear();
 
-            if (awardIntervalsMin.containsKey(producer)) {
-                AwardInterval awardInterval = awardIntervalsMin.get(producer);
-                if (Objects.isNull(awardInterval.getFollowingWin())) {
+            if (awardIntervals.containsKey(producer)) {
+                AwardInterval awardInterval = awardIntervals.get(producer);
+                if (isMin) {
+                    //para o calculo do menor intervalo, só seta o ano/intervalo caso o campo ainda esteja em branco
+                    if (Objects.isNull(awardInterval.getFollowingWin())) {
+                        awardInterval.setFollowingWin(year);
+                    }
+                    if (Objects.isNull(awardInterval.getInterval())) {
+                        awardInterval.setInterval(calculateInterval(awardInterval));
+                    }
+                } else {
+                    //para o calculo do maior intervalo, já estando o produtor na lista, sempre pega o maior ano/intervalo
                     awardInterval.setFollowingWin(year);
-                }
-                if (Objects.isNull(awardInterval.getInterval())) {
-                    Long interval = awardInterval.getFollowingWin() - awardInterval.getPreviousWin();
-                    awardInterval.setInterval(interval);
+                    awardInterval.setInterval(calculateInterval(awardInterval));
                 }
             } else {
-                AwardInterval awardInterval = AwardInterval.builder()
+                final AwardInterval awardInterval = AwardInterval.builder()
                         .producer(producer)
                         .previousWin(year)
                         .build();
-                awardIntervalsMin.put(producer, awardInterval);
+                awardIntervals.put(producer, awardInterval);
             }
         }
     }
 
-    private void buildAwardIntervalMax(List<Award> awards, Map<String, AwardInterval> awardIntervalsMin) {
-        for (Award award : awards) {
-            String producer = award.getProducers();
-            Long year = award.getYear();
-
-            if (awardIntervalsMin.containsKey(producer)) {
-                AwardInterval awardInterval = awardIntervalsMin.get(producer);
-                awardInterval.setFollowingWin(year);
-                Long interval = awardInterval.getFollowingWin() - awardInterval.getPreviousWin();
-                awardInterval.setInterval(interval);
-            } else {
-                AwardInterval awardInterval = AwardInterval.builder()
-                        .producer(producer)
-                        .previousWin(year)
-                        .build();
-                awardIntervalsMin.put(producer, awardInterval);
-            }
-        }
+    private long calculateInterval(AwardInterval awardInterval) {
+        return awardInterval.getFollowingWin() - awardInterval.getPreviousWin();
     }
 
-    private List<AwardInterval> cleanMinList(List<AwardInterval> min) {
-        Collections.sort(min, Comparator.comparingLong(AwardInterval::getInterval));
+    private List<AwardInterval> cleanList(List<AwardInterval> awardIntervalList) {
+        final List<AwardInterval> cleaned = new ArrayList<>();
+        //adiciona o primeiro da lista pois já reebe ordenado
+        cleaned.add(awardIntervalList.get(0));
 
-        List<AwardInterval> minCleaned = new ArrayList<>();
-        minCleaned.add(min.get(0));
-        if (min.size() > 1) {
-            for (int i = 1; i < min.size(); i++) {
-                AwardInterval awardInterval = min.get(i);
-                Long intervalPrevious = min.get(0).getInterval();
-                Long intervalThis = min.get(i).getInterval();
-                if (intervalThis.compareTo(intervalPrevious) == 0) {
-                    minCleaned.add(awardInterval);
-                }
+        //processa a partir do segundo registro, adicionando apenas se tem o mesmo interval do anterior
+        for (int i = 1; i < awardIntervalList.size(); i++) {
+            final AwardInterval awardInterval = awardIntervalList.get(i);
+            final Long intervalPrevious = awardIntervalList.get(0).getInterval();
+            final Long intervalThis = awardIntervalList.get(i).getInterval();
+            if (intervalThis.compareTo(intervalPrevious) == 0) {
+                cleaned.add(awardInterval);
             }
         }
-        Collections.sort(minCleaned, Comparator.comparing(AwardInterval::getProducer));
-        return minCleaned;
-    }
 
-    private List<AwardInterval> cleanMaxList(List<AwardInterval> max) {
-        Collections.sort(max, Comparator.comparingLong(AwardInterval::getInterval));
-        Collections.reverse(max);
-
-        List<AwardInterval> maxCleaned = new ArrayList<>();
-        maxCleaned.add(max.get(0));
-        if (max.size() > 1) {
-            for (int i = 1; i < max.size(); i++) {
-                AwardInterval awardInterval = max.get(i);
-                Long intervalPrevious = max.get(0).getInterval();
-                Long intervalThis = max.get(i).getInterval();
-                if (intervalThis.compareTo(intervalPrevious) == 0) {
-                    maxCleaned.add(awardInterval);
-                }
-            }
-        }
-        Collections.sort(maxCleaned, Comparator.comparing(AwardInterval::getProducer));
-        return maxCleaned;
+        //ordena alfabeticamente pelos produtores
+        Collections.sort(cleaned, Comparator.comparing(AwardInterval::getProducer));
+        return cleaned;
     }
 
 }
