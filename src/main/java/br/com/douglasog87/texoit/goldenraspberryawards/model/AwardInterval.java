@@ -10,8 +10,8 @@ import java.io.Serializable;
 public class AwardInterval implements Serializable {
     private static final long serialVersionUID = -8949415525032339182L;
 
-    private final String producer;
-    private final Long interval;
-    private final Long previousWin;
-    private final Long followingWin;
+    private String producer;
+    private Long interval;
+    private Long previousWin;
+    private Long followingWin;
 }

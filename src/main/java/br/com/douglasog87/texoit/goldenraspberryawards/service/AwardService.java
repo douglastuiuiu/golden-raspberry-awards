@@ -50,6 +50,7 @@ public class AwardService {
             }
 
             awardRepository.saveAll(awards);
+            log.info("Finalizando carregamento de dados a partir do arquivo CSV");
         } catch (Exception e) {
             log.error("Erro ao ler arquivo CSV: {}", e.getMessage());
         }
